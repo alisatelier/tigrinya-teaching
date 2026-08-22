@@ -71,6 +71,7 @@ function renderSectionProgress() {
 }
 
 function renderRevealStep({
+  word,
   primaryText,
   primaryClass = "tigrinya-word",
   secondaryText,
@@ -80,6 +81,7 @@ function renderRevealStep({
 }) {
   const alreadyRead = stepAnswers[currentIndex]?.read;
   exerciseArea.innerHTML = `
+    <div class="flag-row">${flagButtonHtml(word)}</div>
     <div class="${primaryClass}">${primaryText}</div>
     <div class="transliteration">${secondaryText || ""}</div>
     <button id="reveal-btn" style="margin-top: 1rem; ${alreadyRead ? "display:none;" : ""}">${revealLabel}</button>
@@ -87,6 +89,8 @@ function renderRevealStep({
       <p>${answerHtml} <button class="tts" title="${STRINGS.hearIt.ti} / ${STRINGS.hearIt.en}">🔊</button></p>
     </div>
   `;
+
+  wireFlagButton(word);
 
   exerciseArea
     .querySelector(".tts")
@@ -105,8 +109,36 @@ function renderRevealStep({
   }
 }
 
+function flagButtonHtml(word) {
+  const flagged = Boolean(word.needs_review);
+  return `
+    <button class="flag-btn${flagged ? " flagged" : ""}" id="flag-btn">
+      <span class="flag-icon">⚑</span>
+      <span class="flag-text"><span class="bi-ti">${flagged ? STRINGS.flagMarked.ti : STRINGS.flagNeedsCorrection.ti}</span><span class="bi-en">${flagged ? STRINGS.flagMarked.en : STRINGS.flagNeedsCorrection.en}</span></span>
+    </button>
+  `;
+}
+
+function wireFlagButton(word) {
+  const btn = document.getElementById("flag-btn");
+  btn.addEventListener("click", async () => {
+    const next = !word.needs_review;
+    btn.disabled = true;
+    try {
+      await apiPost(`/api/words/${word.id}/flag`, { needs_review: next });
+      word.needs_review = next ? 1 : 0;
+    } catch {
+      // leave state unchanged on failure
+    }
+    btn.disabled = false;
+    btn.outerHTML = flagButtonHtml(word);
+    wireFlagButton(word);
+  });
+}
+
 function renderIntro(word) {
   renderRevealStep({
+    word,
     primaryText: word.tigrinya,
     secondaryText: word.transliteration,
     revealLabel: bilingual("showMeaning"),
@@ -117,9 +149,10 @@ function renderIntro(word) {
 
 function renderPhrase(word) {
   renderRevealStep({
+    word,
     primaryText: word.example_ti,
     primaryClass: "phrase-text",
-    secondaryText: word.tigrinya,
+    secondaryText: word.example_translit,
     revealLabel: bilingual("showTranslation"),
     answerHtml: word.example_en,
     speakText: word.example_en,

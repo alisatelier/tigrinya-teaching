@@ -2,8 +2,10 @@ const express = require("express");
 const { pool } = require("../db");
 const { applySm2 } = require("../srs");
 const asyncHandler = require("../asyncHandler");
+const requireDeviceId = require("../requireDeviceId");
 
 const router = express.Router();
+router.use(requireDeviceId);
 
 router.get(
   "/due",
@@ -14,9 +16,9 @@ router.get(
               w.example_en, w.example_ti
        FROM srs_cards sc
        JOIN words w ON w.id = sc.word_id
-       WHERE sc.due_at <= $1
+       WHERE sc.due_at <= $1 AND sc.device_id = $2
        ORDER BY sc.due_at`,
-      [new Date().toISOString()]
+      [new Date().toISOString(), req.deviceId]
     );
     res.json(cards);
   })
@@ -28,7 +30,10 @@ router.post(
     const { rating } = req.body;
     const {
       rows: [card],
-    } = await pool.query("SELECT * FROM srs_cards WHERE id = $1", [req.params.cardId]);
+    } = await pool.query("SELECT * FROM srs_cards WHERE id = $1 AND device_id = $2", [
+      req.params.cardId,
+      req.deviceId,
+    ]);
     if (!card) {
       return res.status(404).json({ error: "Card not found" });
     }

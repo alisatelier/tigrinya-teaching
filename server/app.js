@@ -4,6 +4,7 @@ const { ready } = require("./db");
 
 const lessonsRouter = require("./routes/lessons");
 const reviewRouter = require("./routes/review");
+const wordsRouter = require("./routes/words");
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use((req, res, next) => {
 });
 app.use("/api/lessons", lessonsRouter);
 app.use("/api/review", reviewRouter);
+app.use("/api/words", wordsRouter);
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 module.exports = app;

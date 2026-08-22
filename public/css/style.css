@@ -78,6 +78,23 @@ button .bi-en {
   opacity: 0.8;
 }
 
+.corrections-banner {
+  display: block;
+  text-align: center;
+  background: #c0392b;
+  color: white;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.corrections-banner .bi-en {
+  color: inherit;
+  opacity: 0.85;
+}
+
 .theme-group {
   margin-bottom: 1.25rem;
 }
@@ -233,6 +250,67 @@ input[type="text"] {
   display: block;
   margin-top: 0.25rem;
   font-weight: 600;
+}
+
+.flag-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.flag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  min-height: auto;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.flag-btn:hover {
+  background: var(--border);
+}
+
+.flag-btn.flagged {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: white;
+}
+
+.flag-btn.flagged:hover {
+  background: #a93226;
+}
+
+.flag-btn .flag-icon {
+  font-size: 0.85rem;
+}
+
+.flag-btn .bi-en {
+  color: inherit;
+  opacity: 0.85;
+}
+
+.correction-card .correction-lesson {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.correction-card .correction-lesson .bi-en {
+  font-weight: 400;
+}
+
+.correction-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.correction-actions button {
+  width: 100%;
 }
 
 .tigrinya-word {

@@ -63,6 +63,21 @@ function saveUnlockedState(lessonId, lesson) {
   );
 }
 
+async function renderCorrectionsBanner() {
+  const banner = document.getElementById("corrections-banner");
+  const flagged = await apiGet("/api/words/flagged");
+  if (flagged.length === 0) {
+    banner.innerHTML = "";
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = "corrections.html";
+  a.className = "corrections-banner";
+  a.innerHTML = `<span class="bi-ti">⚑ ${flagged.length} ${STRINGS.correctionsCount.ti} →</span><span class="bi-en">⚑ ${flagged.length} ${STRINGS.correctionsCount.en} →</span>`;
+  banner.innerHTML = "";
+  banner.appendChild(a);
+}
+
 async function renderLessons() {
   document.getElementById("lessons-heading").innerHTML = bilingual("lessonsHeading");
 
@@ -76,4 +91,5 @@ async function renderLessons() {
   }
 }
 
+renderCorrectionsBanner();
 renderLessons();

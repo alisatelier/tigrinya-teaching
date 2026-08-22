@@ -2,8 +2,10 @@ const express = require("express");
 const { pool } = require("../db");
 const { newCard } = require("../srs");
 const asyncHandler = require("../asyncHandler");
+const requireDeviceId = require("../requireDeviceId");
 
 const router = express.Router();
+router.use(requireDeviceId);
 
 const SECTIONS = ["words", "sentences", "quiz"];
 
@@ -21,11 +23,11 @@ async function sectionTotals(lessonId) {
   return { words: Number(word_count), sentences: Number(sentence_count), quiz: Number(word_count) };
 }
 
-async function sectionsFor(lessonId) {
+async function sectionsFor(lessonId, deviceId) {
   const totals = await sectionTotals(lessonId);
   const { rows } = await pool.query(
-    "SELECT section, done_count, completed_at FROM section_progress WHERE lesson_id = $1",
-    [lessonId]
+    "SELECT section, done_count, completed_at FROM section_progress WHERE lesson_id = $1 AND device_id = $2",
+    [lessonId, deviceId]
   );
   const bySection = Object.fromEntries(rows.map((r) => [r.section, r]));
 
@@ -52,7 +54,7 @@ router.get(
     const withSections = await Promise.all(
       lessonRows.map(async (lesson) => ({
         ...lesson,
-        sections: await sectionsFor(lesson.id),
+        sections: await sectionsFor(lesson.id, req.deviceId),
       }))
     );
     res.json(withSections);
@@ -71,7 +73,7 @@ router.get(
     const { rows: words } = await pool.query("SELECT * FROM words WHERE lesson_id = $1 ORDER BY id", [
       req.params.id,
     ]);
-    res.json({ ...lesson, words, sections: await sectionsFor(req.params.id) });
+    res.json({ ...lesson, words, sections: await sectionsFor(req.params.id, req.deviceId) });
   })
 );
 
@@ -95,10 +97,10 @@ router.post(
 
     const {
       rows: [existing],
-    } = await pool.query("SELECT * FROM section_progress WHERE lesson_id = $1 AND section = $2", [
-      req.params.id,
-      section,
-    ]);
+    } = await pool.query(
+      "SELECT * FROM section_progress WHERE lesson_id = $1 AND section = $2 AND device_id = $3",
+      [req.params.id, section, req.deviceId]
+    );
 
     const newDoneCount = Math.max(existing?.done_count || 0, done);
     const justCompleted = newDoneCount >= total && total > 0 && !existing?.completed_at;
@@ -110,12 +112,12 @@ router.post(
       await client.query("BEGIN");
 
       await client.query(
-        `INSERT INTO section_progress (lesson_id, section, done_count, completed_at)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (lesson_id, section) DO UPDATE SET
+        `INSERT INTO section_progress (lesson_id, section, device_id, done_count, completed_at)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (lesson_id, section, device_id) DO UPDATE SET
            done_count = EXCLUDED.done_count,
            completed_at = EXCLUDED.completed_at`,
-        [req.params.id, section, newDoneCount, completedAt]
+        [req.params.id, section, req.deviceId, newDoneCount, completedAt]
       );
 
       if (section === "words" && justCompleted) {
@@ -126,19 +128,19 @@ router.post(
         const dueNow = new Date().toISOString();
         for (const word of words) {
           await client.query(
-            `INSERT INTO srs_cards (word_id, ease_factor, interval_days, repetitions, due_at)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (word_id) DO NOTHING`,
-            [word.id, card.easeFactor, card.intervalDays, card.repetitions, dueNow]
+            `INSERT INTO srs_cards (word_id, device_id, ease_factor, interval_days, repetitions, due_at)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (word_id, device_id) DO NOTHING`,
+            [word.id, req.deviceId, card.easeFactor, card.intervalDays, card.repetitions, dueNow]
           );
         }
       }
 
       if (section === "quiz" && justCompleted) {
         await client.query(
-          `INSERT INTO lesson_progress (lesson_id, completed_at) VALUES ($1, $2)
-           ON CONFLICT (lesson_id) DO UPDATE SET completed_at = EXCLUDED.completed_at`,
-          [req.params.id, new Date().toISOString()]
+          `INSERT INTO lesson_progress (lesson_id, device_id, completed_at) VALUES ($1, $2, $3)
+           ON CONFLICT (lesson_id, device_id) DO UPDATE SET completed_at = EXCLUDED.completed_at`,
+          [req.params.id, req.deviceId, new Date().toISOString()]
         );
       }
 
@@ -150,7 +152,7 @@ router.post(
       client.release();
     }
 
-    res.json({ ok: true, sections: await sectionsFor(req.params.id) });
+    res.json({ ok: true, sections: await sectionsFor(req.params.id, req.deviceId) });
   })
 );
 

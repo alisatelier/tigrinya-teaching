@@ -47,6 +47,14 @@ const STRINGS = {
   correct: { ti: "ልክዕ እዩ!", en: "Correct!" },
   incorrectFeedback: { ti: "ትክክል ኣይኮነን። መልሱ", en: "Not quite — the answer is" },
   lessonCompleteSummary: { ti: "ትምህርቲ ተዛዚሙ!", en: "Lesson complete!" },
+
+  flagNeedsCorrection: { ti: "ምእራም የድሊ", en: "Needs correction" },
+  flagMarked: { ti: "ተመዝጊቡ", en: "Flagged" },
+  correctionsHeading: { ti: "ምእራም ዘድልዮም", en: "Corrections needed" },
+  correctionsCount: { ti: "ንምእራም ተመዝጊቦም", en: "flagged for correction" },
+  noCorrections: { ti: "ንምእራም ዝተመዝገበ የለን", en: "Nothing flagged for correction" },
+  removeFlag: { ti: "ምልክት ኣልግስ", en: "Remove flag" },
+  openLesson: { ti: "ትምህርቲ ክፈት", en: "Open lesson" },
 };
 
 function bilingual(key) {
