@@ -70,8 +70,18 @@ function renderSectionProgress() {
   exerciseArea.classList.toggle("complete", complete);
 }
 
+// A correction is scoped to either the word ("word": tigrinya +
+// transliteration) or the example sentence ("sentence": example_ti +
+// example_translit) — flagging one never touches the other, and English is
+// never part of either.
+const CORRECTION_SCOPES = {
+  word: { textField: "correction_tigrinya", translitField: "correction_transliteration" },
+  sentence: { textField: "correction_example_ti", translitField: "correction_example_translit" },
+};
+
 function renderRevealStep({
   word,
+  correctionScope,
   primaryText,
   primaryClass = "tigrinya-word",
   secondaryText,
@@ -81,16 +91,17 @@ function renderRevealStep({
 }) {
   const alreadyRead = stepAnswers[currentIndex]?.read;
   exerciseArea.innerHTML = `
-    <div class="flag-row">${flagButtonHtml(word)}</div>
+    ${flagButtonHtml(word, correctionScope)}
     <div class="${primaryClass}">${primaryText}</div>
     <div class="transliteration">${secondaryText || ""}</div>
+    <div id="corrected-to">${correctedToHtml(word, correctionScope)}</div>
     <button id="reveal-btn" style="margin-top: 1rem; ${alreadyRead ? "display:none;" : ""}">${revealLabel}</button>
     <div id="answer" style="display:${alreadyRead ? "block" : "none"}; margin-top: 1rem;">
       <p>${answerHtml} <button class="tts" title="${STRINGS.hearIt.ti} / ${STRINGS.hearIt.en}">🔊</button></p>
     </div>
   `;
 
-  wireFlagButton(word);
+  wireFlagButton(word, correctionScope);
 
   exerciseArea
     .querySelector(".tts")
@@ -109,36 +120,55 @@ function renderRevealStep({
   }
 }
 
-function flagButtonHtml(word) {
-  const flagged = Boolean(word.needs_review);
+function correctedToHtml(word, scope) {
+  const { textField, translitField } = CORRECTION_SCOPES[scope];
+  const text = word[textField];
+  if (!text) return "";
+  const translit = word[translitField];
   return `
-    <button class="flag-btn${flagged ? " flagged" : ""}" id="flag-btn">
-      <span class="flag-icon">⚑</span>
-      <span class="flag-text"><span class="bi-ti">${flagged ? STRINGS.flagMarked.ti : STRINGS.flagNeedsCorrection.ti}</span><span class="bi-en">${flagged ? STRINGS.flagMarked.en : STRINGS.flagNeedsCorrection.en}</span></span>
-    </button>
+    <div class="corrected-to">
+      <div class="corrected-to-label">${bilingual("correctedTo")}</div>
+      <div class="corrected-to-text">${text}</div>
+      ${translit ? `<div class="transliteration">${translit}</div>` : ""}
+    </div>
   `;
 }
 
-function wireFlagButton(word) {
+function flagButtonHtml(word, scope) {
+  const flagged = word[CORRECTION_SCOPES[scope].textField] != null;
+  const title = `${flagged ? STRINGS.flagMarked.en : STRINGS.flagNeedsCorrection.en} / ${flagged ? STRINGS.flagMarked.ti : STRINGS.flagNeedsCorrection.ti}`;
+  return `
+    <button class="flag-btn${flagged ? " flagged" : ""}" id="flag-btn" title="${title}" aria-label="${title}">⚑</button>
+  `;
+}
+
+function wireFlagButton(word, scope) {
   const btn = document.getElementById("flag-btn");
   btn.addEventListener("click", async () => {
-    const next = !word.needs_review;
+    const { textField } = CORRECTION_SCOPES[scope];
+    const flagged = word[textField] != null;
     btn.disabled = true;
     try {
-      await apiPost(`/api/words/${word.id}/flag`, { needs_review: next });
-      word.needs_review = next ? 1 : 0;
+      const updated = await apiPost(`/api/words/${word.id}/correction`, {
+        scope,
+        text: flagged ? null : "",
+        transliteration: null,
+      });
+      Object.assign(word, updated);
     } catch {
       // leave state unchanged on failure
     }
     btn.disabled = false;
-    btn.outerHTML = flagButtonHtml(word);
-    wireFlagButton(word);
+    btn.outerHTML = flagButtonHtml(word, scope);
+    document.getElementById("corrected-to").innerHTML = correctedToHtml(word, scope);
+    wireFlagButton(word, scope);
   });
 }
 
 function renderIntro(word) {
   renderRevealStep({
     word,
+    correctionScope: "word",
     primaryText: word.tigrinya,
     secondaryText: word.transliteration,
     revealLabel: bilingual("showMeaning"),
@@ -150,6 +180,7 @@ function renderIntro(word) {
 function renderPhrase(word) {
   renderRevealStep({
     word,
+    correctionScope: "sentence",
     primaryText: word.example_ti,
     primaryClass: "phrase-text",
     secondaryText: word.example_translit,

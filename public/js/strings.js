@@ -55,6 +55,7 @@ const STRINGS = {
   noCorrections: { ti: "ንምእራም ዝተመዝገበ የለን", en: "Nothing flagged for correction" },
   removeFlag: { ti: "ምልክት ኣልግስ", en: "Remove flag" },
   openLesson: { ti: "ትምህርቲ ክፈት", en: "Open lesson" },
+  correctedTo: { ti: "ዝተመሓየሸ ናብ", en: "Corrected to" },
 };
 
 function bilingual(key) {

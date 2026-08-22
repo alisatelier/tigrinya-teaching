@@ -24,7 +24,10 @@ async function createSchema() {
       example_en TEXT,
       example_ti TEXT,
       example_translit TEXT,
-      needs_review INTEGER NOT NULL DEFAULT 0
+      correction_tigrinya TEXT,
+      correction_transliteration TEXT,
+      correction_example_ti TEXT,
+      correction_example_translit TEXT
     );
 
     CREATE TABLE IF NOT EXISTS srs_cards (
@@ -94,7 +97,11 @@ async function addDeviceScoping() {
 // (e.g. the deployed Neon DB). Both are idempotent.
 async function migrate() {
   await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS example_translit TEXT");
-  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS needs_review INTEGER NOT NULL DEFAULT 0");
+  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_tigrinya TEXT");
+  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_transliteration TEXT");
+  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_example_ti TEXT");
+  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_example_translit TEXT");
+  await pool.query("ALTER TABLE words DROP COLUMN IF EXISTS needs_review");
   await addDeviceScoping();
 
   // Backfill example_translit into rows that predate the column. Matches on
