@@ -73,7 +73,7 @@ async function renderCorrectionsBanner() {
   const a = document.createElement("a");
   a.href = "corrections.html";
   a.className = "corrections-banner";
-  a.innerHTML = `<span class="bi-ti">⚑ ${flagged.length} ${STRINGS.correctionsCount.ti} →</span><span class="bi-en">⚑ ${flagged.length} ${STRINGS.correctionsCount.en} →</span>`;
+  a.innerHTML = `<span class="bi-ti">⚑ ${flagged.length} ${STRINGS.correctionsCount.ti} →</span><span class="bi-en">${flagged.length} ${STRINGS.correctionsCount.en} →</span>`;
   banner.innerHTML = "";
   banner.appendChild(a);
 }

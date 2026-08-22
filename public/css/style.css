@@ -351,6 +351,39 @@ input[type="text"] {
   margin-bottom: 0.5rem;
 }
 
+.correction-scope.collapsed {
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.correction-scope.collapsed .correction-scope-label {
+  margin-bottom: 0.25rem;
+}
+
+.correction-scope-collapsed {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  min-height: auto;
+  color: var(--text);
+  text-align: left;
+}
+
+.correction-scope-collapsed:hover {
+  background: var(--border);
+  color: var(--accent);
+}
+
+.correction-scope-collapsed-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .correction-current {
   margin-bottom: 0.6rem;
 }

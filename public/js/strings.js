@@ -51,7 +51,7 @@ const STRINGS = {
   flagNeedsCorrection: { ti: "ምእራም የድሊ", en: "Needs correction" },
   flagMarked: { ti: "ተመዝጊቡ", en: "Flagged" },
   correctionsHeading: { ti: "ምእራም ዘድልዮም", en: "Corrections needed" },
-  correctionsCount: { ti: "ንምእራም ተመዝጊቦም", en: "flagged for correction" },
+  correctionsCount: { ti: "ትርጉም ንምምሕያሽ ዝተለለየ", en: "flagged for correction" },
   noCorrections: { ti: "ንምእራም ዝተመዝገበ የለን", en: "Nothing flagged for correction" },
   removeFlag: { ti: "ምልክት ኣልግስ", en: "Remove flag" },
   openLesson: { ti: "ትምህርቲ ክፈት", en: "Open lesson" },

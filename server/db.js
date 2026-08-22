@@ -93,20 +93,18 @@ async function addDeviceScoping() {
   `);
 }
 
-// Additive migrations for databases seeded before these columns existed
-// (e.g. the deployed Neon DB). Both are idempotent.
-async function migrate() {
-  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS example_translit TEXT");
-  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_tigrinya TEXT");
-  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_transliteration TEXT");
-  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_example_ti TEXT");
-  await pool.query("ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_example_translit TEXT");
-  await pool.query("ALTER TABLE words DROP COLUMN IF EXISTS needs_review");
-  await addDeviceScoping();
+// Backfill example_translit into rows that predate the column. Matches on
+// the Tigrinya word + example sentence (effectively unique) and only fills
+// rows still missing the value. Guarded by a single count check so that,
+// once every row has been backfilled (true for the live DB already), this
+// is one query instead of one round-trip per word — that loop was firing
+// ~84 sequential queries against Neon on every cold start.
+async function backfillExampleTranslit() {
+  const {
+    rows: [{ count }],
+  } = await pool.query("SELECT COUNT(*) AS count FROM words WHERE example_translit IS NULL");
+  if (Number(count) === 0) return;
 
-  // Backfill example_translit into rows that predate the column. Matches on
-  // the Tigrinya word + example sentence (effectively unique) and only fills
-  // rows still missing the value, so it is a no-op on fresh/already-filled DBs.
   for (const lesson of lessons) {
     for (const word of lesson.words) {
       await pool.query(
@@ -116,6 +114,21 @@ async function migrate() {
       );
     }
   }
+}
+
+// Additive migrations for databases seeded before these columns existed
+// (e.g. the deployed Neon DB). Idempotent.
+async function migrate() {
+  await pool.query(`
+    ALTER TABLE words ADD COLUMN IF NOT EXISTS example_translit TEXT;
+    ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_tigrinya TEXT;
+    ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_transliteration TEXT;
+    ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_example_ti TEXT;
+    ALTER TABLE words ADD COLUMN IF NOT EXISTS correction_example_translit TEXT;
+    ALTER TABLE words DROP COLUMN IF EXISTS needs_review;
+  `);
+  await addDeviceScoping();
+  await backfillExampleTranslit();
 }
 
 async function seedIfEmpty() {
