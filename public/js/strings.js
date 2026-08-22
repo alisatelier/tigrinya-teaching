@@ -19,6 +19,9 @@ const STRINGS = {
   cardsDue: { ti: "ካርድታት ንምድጋም ተዳልዮም", en: "cards due for review" },
   lessonCompleted: { ti: "ተዛዚሙ", en: "Completed" },
   wordsCount: { ti: "ቃላት", en: "words" },
+  sectionWords: { ti: "ቃላት", en: "Words" },
+  sectionSentences: { ti: "ሓረጋት", en: "Sentences" },
+  sectionQuiz: { ti: "ፈተና", en: "Quiz" },
 
   reviewHeading: { ti: "ምድጋም", en: "Review" },
   showAnswer: { ti: "መልሲ ርአ", en: "Show answer" },
@@ -44,7 +47,6 @@ const STRINGS = {
   correct: { ti: "ልክዕ እዩ!", en: "Correct!" },
   incorrectFeedback: { ti: "ትክክል ኣይኮነን። መልሱ", en: "Not quite — the answer is" },
   lessonCompleteSummary: { ti: "ትምህርቲ ተዛዚሙ!", en: "Lesson complete!" },
-  wordsAddedToReview: { ti: "እዞም ቃላት ናብ ናይ ምድጋም መስርዕ ተወሲኾም ኣለዉ", en: "These words have been added to your review queue." },
 };
 
 function bilingual(key) {

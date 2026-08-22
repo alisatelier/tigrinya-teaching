@@ -38,6 +38,14 @@ db.exec(`
     lesson_id INTEGER PRIMARY KEY REFERENCES lessons(id),
     completed_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS section_progress (
+    lesson_id INTEGER NOT NULL REFERENCES lessons(id),
+    section TEXT NOT NULL,
+    done_count INTEGER NOT NULL DEFAULT 0,
+    completed_at TEXT,
+    PRIMARY KEY (lesson_id, section)
+  );
 `);
 
 function seedIfEmpty() {

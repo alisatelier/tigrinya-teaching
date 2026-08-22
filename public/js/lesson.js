@@ -1,9 +1,11 @@
 const lessonId = new URLSearchParams(window.location.search).get("id");
+const section = new URLSearchParams(window.location.search).get("section") || "words";
 const exerciseArea = document.getElementById("exercise-area");
-const progressFill = document.getElementById("progress-fill");
 const stageLabel = document.getElementById("stage-label");
 const stepNav = document.getElementById("step-nav");
+const introProgressEl = document.getElementById("intro-progress");
 
+const SECTION_STAGE = { words: "intro", sentences: "phrase", quiz: "quiz" };
 const STAGE_LABEL_KEYS = {
   intro: "stageIntro",
   phrase: "stagePhrase",
@@ -25,25 +27,47 @@ function shuffle(arr) {
 }
 
 function buildSteps(words) {
-  const intro = words.map((w) => ({ stage: "intro", word: w }));
-  const phrases = words
-    .filter((w) => w.example_en && w.example_ti)
-    .map((w) => ({ stage: "phrase", word: w }));
-  const quiz = words.map((w, i) => ({
+  const stage = SECTION_STAGE[section];
+  if (stage === "intro") {
+    return words.map((w) => ({ stage: "intro", word: w }));
+  }
+  if (stage === "phrase") {
+    return words
+      .filter((w) => w.example_en && w.example_ti)
+      .map((w) => ({ stage: "phrase", word: w }));
+  }
+  return words.map((w, i) => ({
     stage: "quiz",
     type: i % 2 === 0 ? "choice" : "typing",
     word: w,
   }));
-  return [...intro, ...phrases, ...quiz];
-}
-
-function updateProgress() {
-  const pct = Math.round((currentIndex / steps.length) * 100);
-  progressFill.style.width = `${pct}%`;
 }
 
 function updateStageLabel() {
   stageLabel.innerHTML = bilingual(STAGE_LABEL_KEYS[steps[currentIndex].stage]);
+}
+
+function readCount() {
+  const stage = steps[currentIndex].stage;
+  if (stage === "quiz") {
+    return stepAnswers.filter((a) => a).length;
+  }
+  return stepAnswers.filter((a) => a?.read).length;
+}
+
+function postProgress(done) {
+  apiPost(`/api/lessons/${lessonId}/progress`, { section, done }).catch(() => {});
+}
+
+function renderSectionProgress() {
+  const total = steps.length;
+  const done = readCount();
+  const complete = done === total;
+  introProgressEl.innerHTML = `
+    <div class="intro-progress-bar"><div class="intro-progress-fill${complete ? " complete" : ""}" style="width: ${Math.round((done / total) * 100)}%"></div></div>
+    <div class="intro-progress-label">${done} / ${total}</div>
+  `;
+  exerciseArea.classList.toggle("complete", complete);
 }
 
 function renderRevealStep({
@@ -54,24 +78,31 @@ function renderRevealStep({
   answerHtml,
   speakText,
 }) {
+  const alreadyRead = stepAnswers[currentIndex]?.read;
   exerciseArea.innerHTML = `
     <div class="${primaryClass}">${primaryText}</div>
     <div class="transliteration">${secondaryText || ""}</div>
-    <button id="reveal-btn" style="margin-top: 1rem;">${revealLabel}</button>
-    <div id="answer" style="display:none; margin-top: 1rem;">
+    <button id="reveal-btn" style="margin-top: 1rem; ${alreadyRead ? "display:none;" : ""}">${revealLabel}</button>
+    <div id="answer" style="display:${alreadyRead ? "block" : "none"}; margin-top: 1rem;">
       <p>${answerHtml} <button class="tts" title="${STRINGS.hearIt.ti} / ${STRINGS.hearIt.en}">🔊</button></p>
     </div>
   `;
 
-  document.getElementById("reveal-btn").addEventListener("click", () => {
-    document.getElementById("reveal-btn").style.display = "none";
-    const answer = document.getElementById("answer");
-    answer.style.display = "block";
-    answer
-      .querySelector(".tts")
-      .addEventListener("click", () => speakEnglish(speakText));
-    speakEnglish(speakText);
-  });
+  exerciseArea
+    .querySelector(".tts")
+    .addEventListener("click", () => speakEnglish(speakText));
+
+  if (!alreadyRead) {
+    document.getElementById("reveal-btn").addEventListener("click", () => {
+      document.getElementById("reveal-btn").style.display = "none";
+      document.getElementById("answer").style.display = "block";
+      speakEnglish(speakText);
+      stepAnswers[currentIndex] = { type: "read", read: true };
+      renderSectionProgress();
+      renderStepNav();
+      postProgress(readCount());
+    });
+  }
 }
 
 function renderIntro(word) {
@@ -138,6 +169,9 @@ function handleChoice(chosen, correctWord, options) {
   };
   const list = exerciseArea.querySelector(".choice-list");
   showChoiceResult(list, options, correctWord.id, chosen.id, correct);
+  renderSectionProgress();
+  renderStepNav();
+  postProgress(readCount());
 }
 
 function showChoiceResult(list, options, correctId, chosenId, correct) {
@@ -204,6 +238,9 @@ function handleTyping(value, word) {
   stepAnswers[currentIndex] = { type: "typing", correct, value };
   showTypingResult(correct, word.english);
   speakEnglish(word.english);
+  renderSectionProgress();
+  renderStepNav();
+  postProgress(readCount());
 }
 
 function showTypingResult(correct, english) {
@@ -223,16 +260,18 @@ function goToStep(index) {
 }
 
 function renderStepNav() {
-  const stage = steps[currentIndex].stage;
-  const stageIndices = steps
-    .map((s, i) => i)
-    .filter((i) => steps[i].stage === stage);
   const isLastStep = currentIndex === steps.length - 1;
+  const complete = readCount() === steps.length;
+
+  const forwardLabel = isLastStep ? bilingual("finishLesson") : "›";
+  const forwardClass = [isLastStep ? "" : "step-arrow", isLastStep && complete ? "pulse" : ""]
+    .filter(Boolean)
+    .join(" ");
 
   stepNav.innerHTML = `
-    <button id="step-back" class="secondary">${bilingual("back")}</button>
+    <button id="step-back" class="secondary step-arrow" aria-label="${STRINGS.back.en}">‹</button>
     <div class="step-dots"></div>
-    <button id="step-forward">${bilingual(isLastStep ? "finishLesson" : "next")}</button>
+    <button id="step-forward" class="${forwardClass}" aria-label="${STRINGS[isLastStep ? "finishLesson" : "next"].en}">${forwardLabel}</button>
   `;
 
   const backBtn = document.getElementById("step-back");
@@ -240,17 +279,22 @@ function renderStepNav() {
   backBtn.addEventListener("click", () => goToStep(currentIndex - 1));
 
   const dots = stepNav.querySelector(".step-dots");
-  stageIndices.forEach((stepIndex, position) => {
-    const dot = document.createElement("button");
-    dot.className = "step-dot" + (stepIndex === currentIndex ? " active" : "");
-    dot.textContent = position + 1;
-    dot.addEventListener("click", () => goToStep(stepIndex));
-    dots.appendChild(dot);
+  let activeChip = null;
+  steps.forEach((step, stepIndex) => {
+    const word = step.word;
+    const chip = document.createElement("button");
+    const isActive = stepIndex === currentIndex;
+    chip.className = "step-chip" + (isActive ? " active" : "");
+    chip.innerHTML = `<span class="chip-ti">${word.tigrinya}</span><span class="chip-en">${word.transliteration || ""}</span>`;
+    chip.addEventListener("click", () => goToStep(stepIndex));
+    dots.appendChild(chip);
+    if (isActive) activeChip = chip;
   });
+  activeChip?.scrollIntoView({ inline: "center", block: "nearest" });
 
   document.getElementById("step-forward").addEventListener("click", () => {
     if (isLastStep) {
-      finishLesson();
+      finishSection();
     } else {
       goToStep(currentIndex + 1);
     }
@@ -258,7 +302,6 @@ function renderStepNav() {
 }
 
 function renderStep() {
-  updateProgress();
   updateStageLabel();
   const step = steps[currentIndex];
   if (step.stage === "intro") {
@@ -270,22 +313,53 @@ function renderStep() {
   } else {
     renderTyping(step);
   }
+  renderSectionProgress();
   renderStepNav();
 }
 
-async function finishLesson() {
-  progressFill.style.width = "100%";
+async function finishSection() {
   stageLabel.textContent = "";
   stepNav.innerHTML = "";
-  const quizAnswers = stepAnswers.filter((a) => a);
+  introProgressEl.innerHTML = "";
+  exerciseArea.classList.remove("complete");
+  const quizAnswers = stepAnswers.filter((a) => a && (a.type === "choice" || a.type === "typing"));
   const quizCount = quizAnswers.length;
   const correctCount = quizAnswers.filter((a) => a.correct).length;
-  await apiPost(`/api/lessons/${lessonId}/complete`);
+  await apiPost(`/api/lessons/${lessonId}/progress`, { section, done: readCount() });
+
+  const summary =
+    section === "quiz"
+      ? `<p><span class="bi-ti">${STRINGS.lessonCompleteSummary.ti} ${correctCount}/${quizCount} ኣብ ፈተና ልክዕ መሊስካ።</span><span class="bi-en">${STRINGS.lessonCompleteSummary.en} You got ${correctCount} of ${quizCount} right in the quiz.</span></p>`
+      : `<p>${bilingual("lessonCompleteSummary")}</p>`;
+
+  const recapItems = steps
+    .map((step) => {
+      const { word } = step;
+      return step.stage === "phrase"
+        ? { en: word.example_en, ti: word.example_ti }
+        : { en: word.english, ti: word.tigrinya, translit: word.transliteration };
+    })
+    .map(
+      (item, i) => `
+      <button class="recap-item" data-index="${i}">
+        <span class="recap-en">${item.en}</span>
+        <span class="recap-ti" hidden>${item.ti}${item.translit ? ` <span class="transliteration">${item.translit}</span>` : ""}</span>
+      </button>
+    `
+    )
+    .join("");
+
   exerciseArea.innerHTML = `
-    <p><span class="bi-ti">${STRINGS.lessonCompleteSummary.ti} ${correctCount}/${quizCount} ኣብ ፈተና ልክዕ መሊስካ።</span><span class="bi-en">${STRINGS.lessonCompleteSummary.en} You got ${correctCount} of ${quizCount} right in the quiz.</span></p>
-    <p>${bilingual("wordsAddedToReview")}</p>
+    ${summary}
+    <div class="word-recap">${recapItems}</div>
     <a href="index.html"><button>${bilingual("backToLessons")}</button></a>
   `;
+
+  exerciseArea.querySelectorAll(".recap-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      item.querySelector(".recap-ti").hidden = !item.querySelector(".recap-ti").hidden;
+    });
+  });
 }
 
 async function init() {

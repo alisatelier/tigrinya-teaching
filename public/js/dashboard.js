@@ -1,21 +1,66 @@
-async function renderDueBanner() {
-  const banner = document.getElementById("due-banner");
-  const due = await apiGet("/api/review/due");
-  if (due.length === 0) {
-    banner.innerHTML = `<div class="due-banner empty">${bilingual("noReviewsDue")}</div>`;
-    return;
-  }
+const SECTION_LABEL_KEYS = {
+  words: "sectionWords",
+  sentences: "sectionSentences",
+  quiz: "sectionQuiz",
+};
+
+function sectionCard(lesson, sectionKey, { animate }) {
+  const info = lesson.sections[sectionKey];
   const a = document.createElement("a");
-  a.href = "review.html";
-  a.className = "due-banner";
-  a.innerHTML = `<span class="bi-ti">${due.length} ${STRINGS.cardsDue.ti} →</span><span class="bi-en">${due.length} ${STRINGS.cardsDue.en} →</span>`;
-  banner.innerHTML = "";
-  banner.appendChild(a);
+  a.href = `lesson.html?id=${lesson.id}&section=${sectionKey}`;
+  a.className = "card section-card" + (info.completed ? " done" : "") + (animate ? " cascade-in" : "");
+  a.innerHTML = `
+    <div class="section-title">
+      <span class="name">${bilingual(SECTION_LABEL_KEYS[sectionKey])}</span>
+      <span class="section-count">${info.done} / ${info.total}</span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" style="width: ${info.total ? Math.round((info.done / info.total) * 100) : 0}%"></div></div>
+  `;
+  return a;
 }
 
-function lessonStatus(lesson) {
-  if (lesson.completed_at) return bilingual("lessonCompleted");
-  return `<span class="bi-ti">${lesson.word_count} ${STRINGS.wordsCount.ti}</span><span class="bi-en">${lesson.word_count} ${STRINGS.wordsCount.en}</span>`;
+function renderTheme(lesson, previouslyUnlocked) {
+  const group = document.createElement("div");
+  group.className = "theme-group";
+  group.innerHTML = `
+    <div class="theme-heading">
+      <div class="primary">${lesson.title_ti}</div>
+      <div class="secondary">${lesson.title_en}</div>
+    </div>
+  `;
+
+  group.appendChild(sectionCard(lesson, "words", { animate: false }));
+
+  if (lesson.sections.words.completed) {
+    group.appendChild(
+      sectionCard(lesson, "sentences", { animate: !previouslyUnlocked.sentences })
+    );
+  }
+  if (lesson.sections.sentences.completed) {
+    group.appendChild(
+      sectionCard(lesson, "quiz", { animate: !previouslyUnlocked.quiz })
+    );
+  }
+
+  return group;
+}
+
+function loadUnlockedState(lessonId) {
+  try {
+    return JSON.parse(localStorage.getItem(`unlocked-${lessonId}`)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveUnlockedState(lessonId, lesson) {
+  localStorage.setItem(
+    `unlocked-${lessonId}`,
+    JSON.stringify({
+      sentences: lesson.sections.words.completed,
+      quiz: lesson.sections.sentences.completed,
+    })
+  );
 }
 
 async function renderLessons() {
@@ -25,21 +70,10 @@ async function renderLessons() {
   const lessons = await apiGet("/api/lessons");
   list.innerHTML = "";
   for (const lesson of lessons) {
-    const card = document.createElement("div");
-    card.className = "card lesson-card";
-    card.innerHTML = `
-      <div class="titles">
-        <div class="primary">${lesson.title_ti}</div>
-        <div class="secondary">${lesson.title_en}</div>
-      </div>
-      <div class="status">${lessonStatus(lesson)}</div>
-    `;
-    card.addEventListener("click", () => {
-      window.location.href = `lesson.html?id=${lesson.id}`;
-    });
-    list.appendChild(card);
+    const previouslyUnlocked = loadUnlockedState(lesson.id);
+    list.appendChild(renderTheme(lesson, previouslyUnlocked));
+    saveUnlockedState(lesson.id, lesson);
   }
 }
 
-renderDueBanner();
 renderLessons();
