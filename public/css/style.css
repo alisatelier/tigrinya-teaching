@@ -1,0 +1,275 @@
+:root {
+  color-scheme: light dark;
+  --accent: #1a7f5a;
+  --accent-dark: #145f44;
+  --bg: #fafaf8;
+  --card-bg: #ffffff;
+  --text: #1c1c1c;
+  --muted: #6b6b6b;
+  --border: #e2e2df;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  padding: 1.25rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-bg);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.lesson-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.lesson-card:hover {
+  border-color: var(--accent);
+}
+
+.lesson-card .titles .primary {
+  font-weight: 600;
+}
+
+.lesson-card .titles .secondary {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.lesson-card .status {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.due-banner {
+  display: block;
+  text-align: center;
+  background: var(--accent);
+  color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.due-banner.empty {
+  background: var(--muted);
+}
+
+button {
+  font-size: 1rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-dark);
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+button.tts {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 1.3rem;
+  padding: 0 0.3rem;
+}
+
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.choice-list button {
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.choice-list button.correct {
+  background: #d7f0e2;
+  border-color: var(--accent);
+}
+
+.choice-list button.incorrect {
+  background: #f7d9d9;
+  border-color: #c0392b;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.6rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin: 0.75rem 0;
+}
+
+.tigrinya-word {
+  font-size: 1.8rem;
+  margin: 0.25rem 0;
+}
+
+.phrase-text {
+  font-size: 1.3rem;
+  line-height: 1.5;
+  margin: 0.5rem 0;
+}
+
+.bi-ti {
+  display: block;
+}
+
+.bi-en {
+  display: block;
+  font-size: 0.75em;
+  color: var(--muted);
+}
+
+.transliteration {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.step-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.step-dots {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  flex: 1;
+  padding: 0.25rem 0;
+}
+
+.step-dot {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.step-dot.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.feedback {
+  min-height: 1.5rem;
+  font-weight: 600;
+}
+
+.feedback.correct {
+  color: var(--accent);
+}
+
+.feedback.incorrect {
+  color: #c0392b;
+}
+
+.rating-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.rating-row button {
+  flex: 1;
+}
+
+nav.back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --card-bg: #1e2126;
+    --text: #f0f0ee;
+    --muted: #9a9a9a;
+    --border: #33373d;
+  }
+  .choice-list button.correct {
+    background: #143d29;
+  }
+  .choice-list button.incorrect {
+    background: #3d1a1a;
+  }
+}

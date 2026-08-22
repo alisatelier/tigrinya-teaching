@@ -1,0 +1,14 @@
+{
+  "name": "tigrinya-teaching",
+  "version": "1.0.0",
+  "description": "English learning app for Tigrinya speakers",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test:srs": "node server/srs.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2"
+  }
+}
